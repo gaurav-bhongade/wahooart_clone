@@ -63,11 +63,11 @@ WSGI_APPLICATION = 'wahooart_clone.wsgi.application'
 # Otherwise, fall back to SQLite
 
 DATABASES = {
-        'Sqlt': {
+        'default': {
             'ENGINE': 'django.db.backends.sqlite3',
             'NAME': BASE_DIR / 'db.sqlite3',
         },
-        'default': {
+        'sql': {
             'ENGINE': 'django.db.backends.postgresql',
             'NAME': 'railway',
             'USER': 'postgres',
