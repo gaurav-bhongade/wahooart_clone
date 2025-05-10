@@ -1,0 +1,506 @@
+{% extends 'artshop/base.html' %}
+{% load static %}
+
+{% block title %}Custom Art Purchase - ArtShop{% endblock %}
+
+{% block extra_css %}
+<style>
+    .preview-container {
+        position: relative;
+        margin: 0 auto;
+        max-width: 100%;
+        overflow: hidden;
+        background-color: #f5f5f5;
+        min-height: 300px;
+    }
+    
+    .artwork-preview {
+        width: 100%;
+        height: auto;
+        display: block;
+        transition: all 0.3s ease;
+    }
+    
+    .frame-overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        pointer-events: none;
+        box-sizing: border-box;
+        transition: all 0.3s ease;
+        border: 15px solid transparent;
+    }
+    
+    .option-card {
+        cursor: pointer;
+        transition: all 0.3s ease;
+        border: 2px solid transparent;
+    }
+    
+    .option-card:hover, .option-card.selected {
+        border-color: #007bff;
+        transform: translateY(-3px);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
+    
+    .option-image {
+        height: 100px;
+        object-fit: cover;
+        width: 100%;
+    }
+    
+    .price-calculator {
+        background-color: #f8f9fa;
+        padding: 20px;
+        border-radius: 5px;
+        margin-top: 20px;
+    }
+    
+    .artwork-selector {
+        height: 120px;
+        width: 100%;
+        object-fit: cover;
+        border-radius: 5px;
+        margin-bottom: 10px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        border: 2px solid transparent;
+    }
+    
+    .artwork-selector:hover, .artwork-selector.selected {
+        border-color: #007bff;
+        transform: scale(1.05);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
+    
+    .upload-container {
+        border: 2px dashed #ccc;
+        padding: 20px;
+        border-radius: 5px;
+        text-align: center;
+        margin-bottom: 20px;
+        background-color: #f9f9f9;
+    }
+    
+    #frame-overlay {
+        border-image-slice: 20;
+        border-image-repeat: round;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container my-5">
+    <div class="row">
+        <div class="col-12">
+            <h1 class="mb-4 text-center">Customize Your Artwork</h1>
+            <p class="text-center mb-5">Select size, frame, and material options to create your perfect art piece.</p>
+        </div>
+    </div>
+    
+    <div class="row">
+        <!-- Left Column - Preview and Gallery Images -->
+        <div class="col-lg-6 mb-4">
+            <div class="card mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h3 class="mb-0">Upload Your Own Image</h3>
+                </div>
+                <div class="card-body">
+                    <form action="{% url 'artshop:custom_art' %}" method="POST" enctype="multipart/form-data">
+                        {% csrf_token %}
+                        <div class="upload-container">
+                            <i class="fas fa-cloud-upload-alt fa-3x mb-3"></i>
+                            <h5>Upload Your Image</h5>
+                            <p class="text-muted">Upload your own photo or artwork to customize</p>
+                            <input type="file" name="custom_artwork" id="custom_artwork" class="form-control" accept="image/*" required>
+                            <small class="form-text text-muted">Supported formats: JPG, PNG, GIF (Max 5MB)</small>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="custom_name" class="form-label">Artwork Name</label>
+                                <input type="text" name="custom_name" id="custom_name" class="form-control" value="My Custom Artwork">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="custom_artist" class="form-label">Artist Name</label>
+                                <input type="text" name="custom_artist" id="custom_artist" class="form-control" value="Me">
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="custom_description" class="form-label">Description</label>
+                            <textarea name="custom_description" id="custom_description" class="form-control" rows="2">My personal artwork</textarea>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="custom_price" class="form-label">Base Price ($)</label>
+                            <input type="number" name="custom_price" id="custom_price" class="form-control" value="199.99" min="1" step="0.01">
+                        </div>
+                        
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-primary">Upload & Customize</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h3 class="mb-0">Preview</h3>
+                </div>
+                <div class="card-body">
+                    <!-- Artwork Preview Container -->
+                    <div class="preview-container mb-4">
+                        <img src="{{ artwork.get_image_url }}" alt="{{ artwork.name }}" class="artwork-preview" id="artwork-image">
+                        <div class="frame-overlay" id="frame-overlay"></div>
+                    </div>
+                    
+                    <!-- Artwork Information -->
+                    <h4>{{ artwork.name }}</h4>
+                    <p class="text-muted">By {{ artwork.artist }}</p>
+                    <p>{{ artwork.description }}</p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Right Column - Customization Options -->
+        <div class="col-lg-6">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h3 class="mb-0">Customization Options</h3>
+                </div>
+                <div class="card-body">
+                    <form id="customization-form">
+                        <input type="hidden" id="artwork_id" value="{{ artwork.id }}">
+                        
+                        <!-- Size Selection -->
+                        <div class="mb-4">
+                            <h4>1. Select Size</h4>
+                            <select class="form-select" id="size-select">
+                                {% for size in sizes %}
+                                <option value="{{ size.id }}" 
+                                        data-width="{{ size.width_cm }}" 
+                                        data-height="{{ size.height_cm }}" 
+                                        data-multiplier="{{ size.price_multiplier }}">
+                                    {{ size.name }} ({{ size.width_cm }}x{{ size.height_cm }}cm)
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <!-- Frame Selection -->
+                        <div class="mb-4">
+                            <h4>2. Choose Frame</h4>
+                            <div class="row">
+                                {% for frame in frames %}
+                                <div class="col-6 col-md-3 mb-3">
+                                    <div class="option-card frame-option card h-100" 
+                                         data-frame-id="{{ frame.id }}" 
+                                         data-price="{{ frame.price_addition }}"
+                                         data-frame-type="{{ frame.name|lower }}">
+                                        <img src="{{ frame.image.url }}" alt="{{ frame.name }}" class="option-image card-img-top">
+                                        <div class="card-body p-2">
+                                            <h6 class="card-title">{{ frame.name }}</h6>
+                                            <p class="card-text small">+${{ frame.price_addition }}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        
+                        <!-- Material Selection -->
+                        <div class="mb-4">
+                            <h4>3. Select Material</h4>
+                            <div class="row">
+                                {% for material in materials %}
+                                <div class="col-6 col-md-3 mb-3">
+                                    <div class="option-card material-option card h-100" 
+                                         data-material-id="{{ material.id }}" 
+                                         data-multiplier="{{ material.price_multiplier }}">
+                                        <img src="{{ material.image.url }}" alt="{{ material.name }}" class="option-image card-img-top">
+                                        <div class="card-body p-2">
+                                            <h6 class="card-title">{{ material.name }}</h6>
+                                            <p class="card-text small">x{{ material.price_multiplier }}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        
+                        <!-- Price Calculator -->
+                        <div class="price-calculator">
+                            <h4 class="mb-3">Price Summary</h4>
+                            <div class="row mb-2">
+                                <div class="col-8">Base Price:</div>
+                                <div class="col-4 text-end" id="base-price">${{ artwork.base_price|floatformat:2 }}</div>
+                            </div>
+                            <div class="row mb-2">
+                                <div class="col-8">Size Adjustment:</div>
+                                <div class="col-4 text-end" id="size-adjustment">x1.0</div>
+                            </div>
+                            <div class="row mb-2">
+                                <div class="col-8">Frame:</div>
+                                <div class="col-4 text-end" id="frame-price">$0.00</div>
+                            </div>
+                            <div class="row mb-2">
+                                <div class="col-8">Material:</div>
+                                <div class="col-4 text-end" id="material-multiplier">x1.0</div>
+                            </div>
+                            <hr>
+                            <div class="row fw-bold">
+                                <div class="col-8">Total Price:</div>
+                                <div class="col-4 text-end" id="total-price">${{ artwork.base_price|floatformat:2 }}</div>
+                            </div>
+                        </div>
+                        
+                        <!-- Customer Information -->
+                        <div class="mt-4">
+                            <h4>4. Your Information</h4>
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label for="first_name" class="form-label">First Name*</label>
+                                    <input type="text" class="form-control" id="first_name" required>
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="last_name" class="form-label">Last Name*</label>
+                                    <input type="text" class="form-control" id="last_name" required>
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="email" class="form-label">Email*</label>
+                                    <input type="email" class="form-control" id="email" required>
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="phone" class="form-label">Phone</label>
+                                    <input type="tel" class="form-control" id="phone">
+                                </div>
+                                <div class="col-12">
+                                    <label for="address" class="form-label">Address*</label>
+                                    <input type="text" class="form-control" id="address" required>
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="city" class="form-label">City*</label>
+                                    <input type="text" class="form-control" id="city" required>
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="postal_code" class="form-label">Postal Code*</label>
+                                    <input type="text" class="form-control" id="postal_code" required>
+                                </div>
+                                <div class="col-12">
+                                    <label for="country" class="form-label">Country*</label>
+                                    <input type="text" class="form-control" id="country" required>
+                                </div>
+                                <div class="col-12">
+                                    <label for="special_instructions" class="form-label">Special Instructions</label>
+                                    <textarea class="form-control" id="special_instructions" rows="3"></textarea>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Submit Button -->
+                        <div class="d-grid gap-2 mt-4">
+                            <button type="submit" class="btn btn-primary btn-lg">Add to Cart</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize variables to store selections
+    let selectedSize = document.getElementById('size-select').value;
+    let selectedFrame = null;
+    let selectedMaterial = null;
+    
+    // Get base price
+    const basePrice = parseFloat(document.getElementById('base-price').textContent.replace('$', ''));
+    
+    // Select the first frame and material by default
+    if (document.querySelector('.frame-option')) {
+        const firstFrame = document.querySelector('.frame-option');
+        firstFrame.classList.add('selected');
+        selectedFrame = firstFrame.getAttribute('data-frame-id');
+        updateFrameOverlay(firstFrame);
+        
+        // Set initial frame price
+        const framePrice = firstFrame.getAttribute('data-price');
+        document.getElementById('frame-price').textContent = '$' + parseFloat(framePrice).toFixed(2);
+    }
+    
+    if (document.querySelector('.material-option')) {
+        const firstMaterial = document.querySelector('.material-option');
+        firstMaterial.classList.add('selected');
+        selectedMaterial = firstMaterial.getAttribute('data-material-id');
+        
+        // Set initial material multiplier
+        const materialMultiplier = firstMaterial.getAttribute('data-multiplier');
+        document.getElementById('material-multiplier').textContent = 'x' + materialMultiplier;
+    }
+    
+    // Update price calculation
+    updatePriceCalculation();
+    
+    // Size Selection Change
+    document.getElementById('size-select').addEventListener('change', function() {
+        selectedSize = this.value;
+        const multiplier = this.options[this.selectedIndex].getAttribute('data-multiplier');
+        document.getElementById('size-adjustment').textContent = 'x' + multiplier;
+        updatePriceCalculation();
+    });
+    
+    // Frame Selection
+    document.querySelectorAll('.frame-option').forEach(frame => {
+        frame.addEventListener('click', function(e) {
+            e.preventDefault();
+            
+            // Remove selected class from all frames
+            document.querySelectorAll('.frame-option').forEach(f => {
+                f.classList.remove('selected');
+            });
+            
+            // Add selected class to clicked frame
+            this.classList.add('selected');
+            selectedFrame = this.getAttribute('data-frame-id');
+            
+            // Update frame price display
+            const framePrice = this.getAttribute('data-price');
+            document.getElementById('frame-price').textContent = '$' + parseFloat(framePrice).toFixed(2);
+            
+            // Update frame overlay
+            updateFrameOverlay(this);
+            
+            // Update total price
+            updatePriceCalculation();
+        });
+    });
+    
+    // Material Selection
+    document.querySelectorAll('.material-option').forEach(material => {
+        material.addEventListener('click', function(e) {
+            e.preventDefault();
+            
+            // Remove selected class from all materials
+            document.querySelectorAll('.material-option').forEach(m => {
+                m.classList.remove('selected');
+            });
+            
+            // Add selected class to clicked material
+            this.classList.add('selected');
+            selectedMaterial = this.getAttribute('data-material-id');
+            
+            // Update material multiplier display
+            const materialMultiplier = this.getAttribute('data-multiplier');
+            document.getElementById('material-multiplier').textContent = 'x' + materialMultiplier;
+            
+            // Update total price
+            updatePriceCalculation();
+        });
+    });
+    
+    // Update frame overlay on the artwork preview
+    function updateFrameOverlay(frameElement) {
+        const frameOverlay = document.getElementById('frame-overlay');
+        const frameType = frameElement.getAttribute('data-frame-type');
+        const frameImage = frameElement.querySelector('img').src;
+        
+        // Reset styles
+        frameOverlay.style = '';
+        
+        // Apply frame style based on frame type
+        if (frameType.includes('gold')) {
+            frameOverlay.style.border = '25px solid #FFD700';
+            frameOverlay.style.boxShadow = '0 0 10px rgba(255, 215, 0, 0.7)';
+        } 
+        else if (frameType.includes('silver') || frameType.includes('metal')) {
+            frameOverlay.style.border = '20px solid #C0C0C0';
+            frameOverlay.style.boxShadow = '0 0 8px rgba(192, 192, 192, 0.7)';
+        }
+        else if (frameType.includes('black')) {
+            frameOverlay.style.border = '15px solid #000';
+        }
+        else if (frameType.includes('white')) {
+            frameOverlay.style.border = '15px solid #FFF';
+            frameOverlay.style.boxShadow = '0 0 5px rgba(0, 0, 0, 0.3)';
+        }
+        else if (frameType.includes('wood')) {
+            frameOverlay.style.border = '30px solid';
+            frameOverlay.style.borderImage = `url(${frameImage}) 30 round`;
+        }
+        else {
+            // Default frame style
+            frameOverlay.style.border = '15px solid #8B4513';
+        }
+        
+        // Common frame overlay styles
+        frameOverlay.style.position = 'absolute';
+        frameOverlay.style.top = '0';
+        frameOverlay.style.left = '0';
+        frameOverlay.style.width = '100%';
+        frameOverlay.style.height = '100%';
+        frameOverlay.style.pointerEvents = 'none';
+        frameOverlay.style.boxSizing = 'border-box';
+        frameOverlay.style.transition = 'all 0.3s ease';
+    }
+    
+    // Calculate and update the total price
+    function updatePriceCalculation() {
+        if (!selectedSize || !selectedFrame || !selectedMaterial) {
+            return; // Exit if any selection is missing
+        }
+        
+        // Get current values
+        const sizeSelect = document.getElementById('size-select');
+        const sizeMultiplier = parseFloat(sizeSelect.options[sizeSelect.selectedIndex].getAttribute('data-multiplier'));
+        
+        const selectedFrameElement = document.querySelector(`.frame-option[data-frame-id="${selectedFrame}"]`);
+        const framePrice = parseFloat(selectedFrameElement.getAttribute('data-price'));
+        
+        const selectedMaterialElement = document.querySelector(`.material-option[data-material-id="${selectedMaterial}"]`);
+        const materialMultiplier = parseFloat(selectedMaterialElement.getAttribute('data-multiplier'));
+        
+        // Calculate prices
+        const sizeAdjustedPrice = basePrice * sizeMultiplier;
+        const materialAdjustedPrice = sizeAdjustedPrice * materialMultiplier;
+        const totalPrice = materialAdjustedPrice + framePrice;
+        
+        // Update UI
+        document.getElementById('total-price').textContent = '$' + totalPrice.toFixed(2);
+    }
+    
+    // Form submission
+    document.getElementById('customization-form').addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        // Validate form
+        const requiredFields = ['first_name', 'last_name', 'email', 'address', 'city', 'postal_code', 'country'];
+        let isValid = true;
+        
+        requiredFields.forEach(field => {
+            const input = document.getElementById(field);
+            if (!input.value.trim()) {
+                input.classList.add('is-invalid');
+                isValid = false;
+            } else {
+                input.classList.remove('is-invalid');
+            }
+        });
+        
+        if (!isValid) {
+            alert('Please fill in all required fields.');
+            return;
+        }
+        
+        // Here you would typically submit the form data to the server
+        alert('Thank you for your order! We will process it shortly.');
+    });
+});
+</script>
+{% endblock %}
