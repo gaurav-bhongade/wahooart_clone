@@ -118,3 +118,8 @@ REST_FRAMEWORK = {
         'rest_framework.renderers.BrowsableAPIRenderer',  # Required for browsable API
     ]
 }
+
+
+CSRF_TRUSTED_ORIGINS = [
+    'https://wahooartclone-production.up.railway.app',
+]
