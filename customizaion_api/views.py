@@ -150,11 +150,11 @@ def preview_artwork(request):
     return Response({"preview_base64": image_base64})
 
 
-from .serializers import SizeSerializer, FrameSerializer, MaterialSerializer, BackgroundImageSerializer, CategorySerializer, ArtworkCategorySerializer
+from .serializers import SizeSerializer, FrameSerializer, MaterialSerializer, BackgroundImageSerializer, CategorySerializer, ArtworkCategorySerializer, ArtworkSerializer
 
 class ArtworkViewSet(viewsets.ModelViewSet):
     queryset = Artwork.objects.all()
-    serializer_class = SizeSerializer
+    serializer_class = ArtworkSerializer
 
 class SizeViewSet(viewsets.ModelViewSet):
     queryset = Size.objects.all()

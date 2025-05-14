@@ -2,10 +2,11 @@ from django.urls import path, include
 from . import views
 from rest_framework.routers import DefaultRouter
 from .views import (
-    SizeViewSet, FrameViewSet, MaterialViewSet, BackgroundImageViewSet, CustomizedArtworkViewSet, CategoryViewSet, ArtworkCategoryViewSet
+    SizeViewSet, FrameViewSet, MaterialViewSet, BackgroundImageViewSet, CustomizedArtworkViewSet, CategoryViewSet, ArtworkCategoryViewSet, ArtworkViewSet
 )
 
 router = DefaultRouter()
+router.register(r'artworks', ArtworkViewSet)
 router.register(r'sizes', SizeViewSet)
 router.register(r'frames', FrameViewSet)
 router.register(r'materials', MaterialViewSet)
