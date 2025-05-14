@@ -169,6 +169,6 @@ class BackgroundImageViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = BackgroundImage.objects.all()
     serializer_class = BackgroundImageSerializer
 
-class CustomizedArtworkViewSet(viewsets.ReadOnlyModelViewSet):
+class CustomizedArtworkViewSet(viewsets.ModelViewSet):  # <-- Changed this
     queryset = CustomizedArtwork.objects.all()
     serializer_class = CustomizedArtworkSerializer
