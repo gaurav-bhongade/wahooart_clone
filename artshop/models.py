@@ -64,9 +64,25 @@ class BackgroundImage(models.Model):
     
     def __str__(self):
         return self.name
+    
+class Category(models.Model):
+    name = models.CharField(max_length=100)
+    def __str__(self):
+        return self.name
+
+class ArtworkCategory(models.Model):
+    category = models.ForeignKey(Category, on_delete=models.CASCADE)
+    image_url = models.URLField(blank=True, null=True)  # Made optional
+    image_file = models.ImageField(upload_to='artworkcategory/', blank=True, null=True)  # New field for uploaded images
+    is_user_uploaded = models.BooleanField(default=False)
+    def __str__(self):
+        if self.image_file:
+            return f"Artwork Category # {self.category.name} - {self.id} - {self.image_file.name}"
+        return f"Artwork Category # {self.category.name} - {self.id} - {self.image_url or 'No image'}"
 
 class CustomizedArtwork(models.Model):
-    original_artwork = models.ForeignKey(Artwork, on_delete=models.CASCADE)
+    original_artwork = models.ForeignKey(Artwork, on_delete=models.CASCADE, null=True, blank=True)
+    original_artwork_category = models.ForeignKey(ArtworkCategory, on_delete=models.CASCADE, null=True, blank=True)
     selected_frame = models.ForeignKey(Frame, on_delete=models.SET_NULL, null=True)
     selected_material = models.ForeignKey(Material, on_delete=models.SET_NULL, null=True)
     selected_size = models.ForeignKey(Size, on_delete=models.SET_NULL, null=True)

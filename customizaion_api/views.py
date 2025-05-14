@@ -1,6 +1,6 @@
 from django.shortcuts import render
 from rest_framework import viewsets
-from artshop.models import Artwork, Size, Frame, Material, CustomizedArtwork, BackgroundImage
+from artshop.models import Artwork, Size, Frame, Material, CustomizedArtwork, BackgroundImage, Category, ArtworkCategory
 from rest_framework.decorators import api_view, parser_classes
 from rest_framework.response import Response
 from rest_framework.parsers import MultiPartParser, FormParser
@@ -150,25 +150,37 @@ def preview_artwork(request):
     return Response({"preview_base64": image_base64})
 
 
-from .serializers import SizeSerializer, FrameSerializer, MaterialSerializer, BackgroundImageSerializer
+from .serializers import SizeSerializer, FrameSerializer, MaterialSerializer, BackgroundImageSerializer, CategorySerializer, ArtworkCategorySerializer
 
-class SizeViewSet(viewsets.ReadOnlyModelViewSet):
+class ArtworkViewSet(viewsets.ModelViewSet):
+    queryset = Artwork.objects.all()
+    serializer_class = SizeSerializer
+
+class SizeViewSet(viewsets.ModelViewSet):
     queryset = Size.objects.all()
     serializer_class = SizeSerializer
 
-class FrameViewSet(viewsets.ReadOnlyModelViewSet):
+class FrameViewSet(viewsets.ModelViewSet):
     queryset = Frame.objects.all()
     serializer_class = FrameSerializer
 
-class MaterialViewSet(viewsets.ReadOnlyModelViewSet):
+class MaterialViewSet(viewsets.ModelViewSet):
     queryset = Material.objects.all()
     serializer_class = MaterialSerializer
 
 
-class BackgroundImageViewSet(viewsets.ReadOnlyModelViewSet):
+class BackgroundImageViewSet(viewsets.ModelViewSet):
     queryset = BackgroundImage.objects.all()
     serializer_class = BackgroundImageSerializer
 
 class CustomizedArtworkViewSet(viewsets.ModelViewSet):  # <-- Changed this
     queryset = CustomizedArtwork.objects.all()
     serializer_class = CustomizedArtworkSerializer
+
+class CategoryViewSet(viewsets.ModelViewSet):  # <-- Changed this
+    queryset = Category.objects.all()
+    serializer_class = CategorySerializer
+
+class ArtworkCategoryViewSet(viewsets.ModelViewSet):  # <-- Changed this
+    queryset = ArtworkCategory.objects.all()
+    serializer_class = ArtworkCategorySerializer

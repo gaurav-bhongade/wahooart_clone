@@ -2,7 +2,7 @@ from django.urls import path, include
 from . import views
 from rest_framework.routers import DefaultRouter
 from .views import (
-    SizeViewSet, FrameViewSet, MaterialViewSet, BackgroundImageViewSet, CustomizedArtworkViewSet
+    SizeViewSet, FrameViewSet, MaterialViewSet, BackgroundImageViewSet, CustomizedArtworkViewSet, CategoryViewSet, ArtworkCategoryViewSet
 )
 
 router = DefaultRouter()
@@ -11,6 +11,8 @@ router.register(r'frames', FrameViewSet)
 router.register(r'materials', MaterialViewSet)
 router.register(r'backgrounds', BackgroundImageViewSet)
 router.register(r'customized-artworks', CustomizedArtworkViewSet)
+router.register(r'categories', CategoryViewSet)
+router.register(r'artworks-categories', ArtworkCategoryViewSet)
 
 urlpatterns = [
     path('', include(router.urls)),
