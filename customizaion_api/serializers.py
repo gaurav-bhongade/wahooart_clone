@@ -28,6 +28,7 @@ class BackgroundImageSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 class CustomizedArtworkSerializer(serializers.ModelSerializer):
+
     class Meta:
         model = CustomizedArtwork
         fields = '__all__'

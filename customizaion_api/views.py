@@ -164,6 +164,11 @@ class MaterialViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = Material.objects.all()
     serializer_class = MaterialSerializer
 
+
 class BackgroundImageViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = BackgroundImage.objects.all()
     serializer_class = BackgroundImageSerializer
+
+class CustomizedArtworkViewSet(viewsets.ReadOnlyModelViewSet):
+    queryset = CustomizedArtwork.objects.all()
+    serializer_class = CustomizedArtworkSerializer
