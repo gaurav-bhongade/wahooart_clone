@@ -65,13 +65,13 @@ class BackgroundImage(models.Model):
     def __str__(self):
         return self.name
     
-class Category(models.Model):
+class ArtworkCategory(models.Model):
     name = models.CharField(max_length=100)
     def __str__(self):
         return self.name
 
-class ArtworkCategory(models.Model):
-    category = models.ForeignKey(Category, on_delete=models.CASCADE)
+class ArtworkCategoryImage(models.Model):
+    category = models.ForeignKey(ArtworkCategory, on_delete=models.CASCADE)
     image_url = models.URLField(blank=True, null=True)  # Made optional
     image_file = models.ImageField(upload_to='artworkcategory/', blank=True, null=True)  # New field for uploaded images
     is_user_uploaded = models.BooleanField(default=False)
@@ -99,3 +99,4 @@ class CustomizedArtwork(models.Model):
     def get_absolute_url(self):
         return reverse('admin:artshop_customizedartwork_change', args=[self.id])
     
+
