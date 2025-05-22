@@ -82,7 +82,7 @@ class ArtworkCategoryImage(models.Model):
 
 class CustomizedArtwork(models.Model):
     original_artwork = models.ForeignKey(Artwork, on_delete=models.CASCADE, null=True, blank=True)
-    original_artwork_category = models.ForeignKey(ArtworkCategory, on_delete=models.CASCADE, null=True, blank=True)
+    original_artwork_category_image = models.ForeignKey(ArtworkCategoryImage, on_delete=models.CASCADE, null=True, blank=True)
     selected_frame = models.ForeignKey(Frame, on_delete=models.SET_NULL, null=True)
     selected_material = models.ForeignKey(Material, on_delete=models.SET_NULL, null=True)
     selected_size = models.ForeignKey(Size, on_delete=models.SET_NULL, null=True)

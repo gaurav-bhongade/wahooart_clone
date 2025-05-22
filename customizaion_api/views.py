@@ -11,6 +11,7 @@ from artshop.views import generate_customized_artwork
 from .models import ProductCategories, Product
 from .serializers import SizeSerializer, FrameSerializer, MaterialSerializer, BackgroundImageSerializer, ArtworkCategoryImageSerializer, ArtworkCategorySerializer, ArtworkSerializer, ProductCategorySerializer, ProductSerializer
 
+
 @api_view(['POST'])
 @parser_classes([MultiPartParser, FormParser])
 def upload_artwork(request):
