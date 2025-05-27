@@ -39,6 +39,7 @@ class Frame(models.Model):
     image = models.ImageField(upload_to='frames/')
     price_addition = models.DecimalField(max_digits=10, decimal_places=2)
     supported_sizes = models.ManyToManyField('Size', related_name='frames')
+    thickness = models.DecimalField(max_digits=5, decimal_places=2, default=1.00)
 
     def __str__(self):
         return self.name
@@ -72,8 +73,9 @@ class ArtworkCategory(models.Model):
 
 class ArtworkCategoryImage(models.Model):
     category = models.ForeignKey(ArtworkCategory, on_delete=models.CASCADE)
-    image_url = models.URLField(blank=True, null=True)  # Made optional
-    image_file = models.ImageField(upload_to='artworkcategory/', blank=True, null=True)  # New field for uploaded images
+    image_url = models.URLField(blank=True, null=True)
+    image_file = models.ImageField(upload_to='artworkcategory/', blank=True, null=True)
+    description = models.TextField(blank=True, null=True)
     is_user_uploaded = models.BooleanField(default=False)
     def __str__(self):
         if self.image_file:

@@ -1,11 +1,13 @@
 from django.contrib import admin
-from .models import Artwork, Frame, Material, Size, CustomizedArtwork, BackgroundImage
+from .models import Artwork, Frame, Material, Size, CustomizedArtwork, BackgroundImage, ArtworkCategory, ArtworkCategoryImage
 from django.utils.html import format_html
 
 admin.site.register(Artwork)
 admin.site.register(Frame)
 admin.site.register(Material)
 admin.site.register(Size)
+admin.site.register(ArtworkCategory)
+admin.site.register(ArtworkCategoryImage)
 
 @admin.register(CustomizedArtwork)
 class CustomizedArtworkAdmin(admin.ModelAdmin):
