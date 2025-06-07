@@ -14,7 +14,7 @@ SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-v7!m7zp@$^j#qn=o(f1wa1z=pe
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['0.0.0.0', 'localhost', '127.0.0.1', '.replit.dev', '.repl.co', '192.168.1.10', 'wahooartclone-production.up.railway.app']
+ALLOWED_HOSTS = ['0.0.0.0', 'localhost', '127.0.0.1', '.replit.dev', '.repl.co', '192.168.1.10', 'wahooartclone-production.up.railway.app', 'https://frames-seven-iota.vercel.app/']
 
 # Application definition
 INSTALLED_APPS = [
