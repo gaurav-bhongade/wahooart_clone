@@ -76,7 +76,7 @@ class ArtworkCategoryImage(models.Model):
     image_url = models.URLField(blank=True, null=True)
     image_file = models.ImageField(upload_to='artworkcategory/', blank=True, null=True)
     description = models.TextField(blank=True, null=True)
-    supported_sizes = models.ManyToManyField('Size', related_name='category_images', blank=True, null=True)
+    supported_sizes = models.ManyToManyField('Size', related_name='category_images', blank=True)
     is_user_uploaded = models.BooleanField(default=False)
     def __str__(self):
         if self.image_file:
