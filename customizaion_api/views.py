@@ -180,6 +180,7 @@ class CustomizedArtworkViewSet(viewsets.ModelViewSet):
     queryset = CustomizedArtwork.objects.all()
     serializer_class = CustomizedArtworkSerializer
 
+
 class ArtworkCategoryViewSet(viewsets.ModelViewSet):
     queryset = ArtworkCategory.objects.all()
     serializer_class = ArtworkCategorySerializer

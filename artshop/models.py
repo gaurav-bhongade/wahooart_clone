@@ -89,7 +89,10 @@ class CustomizedArtwork(models.Model):
     selected_frame = models.ForeignKey(Frame, on_delete=models.SET_NULL, null=True)
     selected_material = models.ForeignKey(Material, on_delete=models.SET_NULL, null=True)
     selected_size = models.ForeignKey(Size, on_delete=models.SET_NULL, null=True)
-    final_image = models.ImageField(upload_to='customized_artworks/')
+    
+    # Changed field from ImageField to TextField for base64
+    final_image = models.TextField()  
+
     created_at = models.DateTimeField(auto_now_add=True)
     customer_name = models.CharField(max_length=100, blank=True)
     selected_background = models.ForeignKey(BackgroundImage, on_delete=models.SET_NULL, null=True, blank=True)
@@ -101,5 +104,6 @@ class CustomizedArtwork(models.Model):
 
     def get_absolute_url(self):
         return reverse('admin:artshop_customizedartwork_change', args=[self.id])
+
     
 
