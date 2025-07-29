@@ -84,19 +84,10 @@ class ArtworkCategoryImage(models.Model):
         return f"Artwork Category # {self.category.name} - {self.id} - {self.image_url or 'No image'}"
 
 class CustomizedArtwork(models.Model):
-    original_artwork = models.ForeignKey(Artwork, on_delete=models.CASCADE, null=True, blank=True)
-    original_artwork_category_image = models.ForeignKey(ArtworkCategoryImage, on_delete=models.CASCADE, null=True, blank=True)
-    selected_frame = models.ForeignKey(Frame, on_delete=models.SET_NULL, null=True)
-    selected_material = models.ForeignKey(Material, on_delete=models.SET_NULL, null=True)
-    selected_size = models.ForeignKey(Size, on_delete=models.SET_NULL, null=True)
-    
-    # Changed field from ImageField to TextField for base64
+    artwork = models.ImageField(upload_to='customized_artwork/')
+    selected_frame = models.ForeignKey(Frame, on_delete=models.SET_NULL, null=True) 
     final_image = models.TextField()  
-
     created_at = models.DateTimeField(auto_now_add=True)
-    customer_name = models.CharField(max_length=100, blank=True)
-    selected_background = models.ForeignKey(BackgroundImage, on_delete=models.SET_NULL, null=True, blank=True)
-    customer_email = models.EmailField(blank=True)
     is_completed = models.BooleanField(default=False)
 
     def __str__(self):
@@ -105,5 +96,4 @@ class CustomizedArtwork(models.Model):
     def get_absolute_url(self):
         return reverse('admin:artshop_customizedartwork_change', args=[self.id])
 
-    
 
