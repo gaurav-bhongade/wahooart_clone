@@ -84,9 +84,7 @@ class ArtworkCategoryImage(models.Model):
         return f"Artwork Category # {self.category.name} - {self.id} - {self.image_url or 'No image'}"
 
 class CustomizedArtwork(models.Model):
-    artwork = models.ImageField(upload_to='customized_artwork/')
-    selected_frame = models.ForeignKey(Frame, on_delete=models.SET_NULL, null=True) 
-    final_image = models.TextField()  
+    final_image = models.ImageField(upload_to='customized_artworks/')
     created_at = models.DateTimeField(auto_now_add=True)
     is_completed = models.BooleanField(default=False)
 

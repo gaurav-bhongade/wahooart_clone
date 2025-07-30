@@ -31,22 +31,26 @@ class BackgroundImageSerializer(serializers.ModelSerializer):
         model = BackgroundImage
         fields = '__all__'
 
-class Base64ImageField(serializers.ImageField):
-    def to_internal_value(self, data):
-        if isinstance(data, str) and data.startswith('data:image'):
-            # Decode the base64 image
-            format, imgstr = data.split(';base64,')  # format ~= data:image/X
-            ext = format.split('/')[-1]  # guess file extension
-            id = uuid.uuid4().hex[:10]
-            data = ContentFile(base64.b64decode(imgstr), name=f"{id}.{ext}")
-        return super().to_internal_value(data)
 
 class CustomizedArtworkSerializer(serializers.ModelSerializer):
-    final_image = Base64ImageField()
+    final_image_base64 = serializers.CharField(write_only=True, required=False)
+    final_image = serializers.ImageField(required=False)  # Add this line
 
     class Meta:
         model = CustomizedArtwork
         fields = '__all__'
+
+    def create(self, validated_data):
+        base64_image = validated_data.pop('final_image_base64', None)
+        if base64_image:
+            format, imgstr = base64_image.split(';base64,')
+            ext = format.split('/')[-1]
+            decoded_image = ContentFile(base64.b64decode(imgstr), name='custom_artwork.' + ext)
+            validated_data['final_image'] = decoded_image
+
+        return super().create(validated_data)
+
+
 
 class ArtworkCategorySerializer(serializers.ModelSerializer):
     class Meta:

@@ -20,6 +20,4 @@ router.register(r'products', ProductViewSet)
 urlpatterns = [
     path('', include(router.urls)),
     path('api/upload-artwork/', views.upload_artwork, name='upload_artwork'),
-    path('api/customize-artwork/', views.customize_artwork, name='customize_artwork'),
-    path('api/preview-artwork/', views.preview_artwork, name='preview_artwork'),
 ]

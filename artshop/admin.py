@@ -11,20 +11,13 @@ admin.site.register(ArtworkCategoryImage)
 
 @admin.register(CustomizedArtwork)
 class CustomizedArtworkAdmin(admin.ModelAdmin):
-    list_display = ('id', 'preview_image', 'original_artwork', 'selected_size', 
-                   'selected_frame', 'selected_material', 'created_at', 'is_completed')
-    list_filter = ('is_completed', 'created_at', 'selected_frame', 'selected_material')
-    search_fields = ('original_artwork__name', 'customer_name', 'customer_email')
+    list_display = ('id', 'preview_image', 'created_at', 'is_completed')
+    list_filter = ('is_completed', 'created_at')
     readonly_fields = ('preview_image', 'created_at')
+    
     fieldsets = (
         (None, {
-            'fields': ('original_artwork', 'preview_image', 'final_image')
-        }),
-        ('Customization Options', {
-            'fields': ('selected_size', 'selected_frame', 'selected_material')
-        }),
-        ('Customer Information', {
-            'fields': ('customer_name', 'customer_email')
+            'fields': ('preview_image', 'final_image')
         }),
         ('Status', {
             'fields': ('is_completed', 'created_at')
