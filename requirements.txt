@@ -1,11 +1,12 @@
 asgiref==3.8.1
-Django==4.2
-django-cors-headers==3.13.0
-djangorestframework==3.14.0
+Django==5.2.1
+django-cors-headers==4.7.0
+django-extensions==4.1
+djangorestframework==3.16.0
 gunicorn==23.0.0
-numpy==1.24.4
+numpy==2.2.5
 packaging==25.0
-pillow==9.5.0
+pillow==11.2.1
 psycopg==3.2.9
 psycopg-binary==3.2.9
 psycopg-pool==3.2.6
