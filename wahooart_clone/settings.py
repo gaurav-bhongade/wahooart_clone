@@ -69,11 +69,11 @@ WSGI_APPLICATION = 'wahooart_clone.wsgi.application'
 
 
 DATABASES = {
-        'SQLT': {
+        'default': {
             'ENGINE': 'django.db.backends.sqlite3',
             'NAME': BASE_DIR / 'db.sqlite3',
         },
-        'default': {
+        'render': {
             'ENGINE': 'django.db.backends.postgresql',
             'NAME': 'photo_framing',
             'USER': 'photo_framing_user',
