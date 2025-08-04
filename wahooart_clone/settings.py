@@ -69,16 +69,16 @@ WSGI_APPLICATION = 'wahooart_clone.wsgi.application'
 
 
 DATABASES = {
-        'default': {
+        'SQLT': {
             'ENGINE': 'django.db.backends.sqlite3',
             'NAME': BASE_DIR / 'db.sqlite3',
         },
-        'sql': {
+        'default': {
             'ENGINE': 'django.db.backends.postgresql',
-            'NAME': 'railway',
-            'USER': 'postgres',
-            'PASSWORD': 'XjumetxEolhbdUPbImUCXvqRbPFoKOhr',
-            'HOST': 'postgres.railway.internal',
+            'NAME': 'photo_framing',
+            'USER': 'photo_framing_user',
+            'PASSWORD': '2eMvqKpEIy7402ug38ChWaBPvyXj2GyP',
+            'HOST': 'dpg-d28b2mh5pdvs738d202g-a.oregon-postgres.render.com',
             'PORT': '5432'
         }
     }
