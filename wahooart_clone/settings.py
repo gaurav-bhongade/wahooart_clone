@@ -15,7 +15,7 @@ SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-v7!m7zp@$^j#qn=o(f1wa1z=pe
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['0.0.0.0', 'localhost', '127.0.0.1', '.replit.dev', '.repl.co', '192.168.1.10', 'gauravbhongade4.pythonanywhere.com', 'https://frames-seven-iota.vercel.app']
+ALLOWED_HOSTS = ['127.0.0.1', 'https://gauravbhongade4.pythonanywhere.com', 'https://frames-seven-iota.vercel.app']
 
 # Application definition
 INSTALLED_APPS = [
@@ -67,9 +67,6 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'wahooart_clone.wsgi.application'
 
-# Database
-# If DATABASE_URL environment variable is available, use PostgreSQL
-# Otherwise, fall back to SQLite
 
 DATABASES = {
         'default': {
