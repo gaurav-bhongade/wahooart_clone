@@ -4,6 +4,7 @@ Django settings for wahooart_clone project.
 
 import os
 from pathlib import Path
+from datetime import timedelta
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -14,7 +15,7 @@ SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-v7!m7zp@$^j#qn=o(f1wa1z=pe
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['0.0.0.0', 'localhost', '127.0.0.1', '.replit.dev', '.repl.co', '192.168.1.10', 'gauravbhongade4.pythonanywhere.com', 'https://frames-seven-iota.vercel.app/']
+ALLOWED_HOSTS = ['0.0.0.0', 'localhost', '127.0.0.1', '.replit.dev', '.repl.co', '192.168.1.10', 'gauravbhongade4.pythonanywhere.com', 'https://frames-seven-iota.vercel.app']
 
 # Application definition
 INSTALLED_APPS = [
@@ -26,7 +27,10 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'artshop',
     'customizaion_api',
+    'registrationapi',
     'rest_framework',
+    'rest_framework_simplejwt',
+    'rest_framework_simplejwt.token_blacklist',
     'corsheaders',
     'django_extensions',
 ]
@@ -40,6 +44,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'registrationapi.middleware.BlockBlacklistedTokensMiddleware',
 ]
 
 ROOT_URLCONF = 'wahooart_clone.urls'
@@ -119,13 +124,25 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 REST_FRAMEWORK = {
     'DEFAULT_RENDERER_CLASSES': [
         'rest_framework.renderers.JSONRenderer',
-        'rest_framework.renderers.BrowsableAPIRenderer',  # Required for browsable API
-    ]
+        'rest_framework.renderers.BrowsableAPIRenderer',
+    ],
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
+    ),
 }
 
+SIMPLE_JWT = {
+    "ACCESS_TOKEN_LIFETIME": timedelta(days=365),
+    "REFRESH_TOKEN_LIFETIME": timedelta(days=365),
+    "ROTATE_REFRESH_TOKENS": True,
+    "BLACKLIST_AFTER_ROTATION": True,
+    "AUTH_HEADER_TYPES": ("Bearer",),
+    "TOKEN_BLACKLIST_ENABLED": True,
+    "UPDATE_LAST_LOGIN": True,
+}
 
 CSRF_TRUSTED_ORIGINS = [
-    'https://wahooartclone-production.up.railway.app',
+    'https://gauravbhongade4.pythonanywhere.com',
 ]
 
 

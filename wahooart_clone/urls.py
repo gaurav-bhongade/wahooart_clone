@@ -8,5 +8,6 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('', include('artshop.urls')),
     path('', include('customizaion_api.urls')),
+    path('registration_api/', include('registrationapi.urls')),
 ] + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
 
