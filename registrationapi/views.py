@@ -537,3 +537,4 @@ def delete_user_account(request):
     except Exception as e:
         return Response({"error": "Something went wrong while deleting the account."}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
+
