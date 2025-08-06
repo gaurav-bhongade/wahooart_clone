@@ -15,7 +15,7 @@ SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-v7!m7zp@$^j#qn=o(f1wa1z=pe
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['127.0.0.1', 'https://gauravbhongade4.pythonanywhere.com', 'gauravbhongade4.pythonanywhere.com', 'https://frames-seven-iota.vercel.app']
+ALLOWED_HOSTS = ['127.0.0.1', 'https://gauravbhongade4.pythonanywhere.com', 'gauravbhongade4.pythonanywhere.com', 'https://frames-seven-iota.vercel.app', "http://localhost:5173", 'localhost', 'localhost:5173']
 
 # Application definition
 INSTALLED_APPS = [
@@ -142,9 +142,11 @@ CSRF_TRUSTED_ORIGINS = [
     'https://gauravbhongade4.pythonanywhere.com',
 ]
 
-CORS_ALLOW_HEADERS = [
-    'content-type',
-    'authorization',
+
+from corsheaders.defaults import default_headers
+
+CORS_ALLOW_HEADERS = list(default_headers) + [
+    'content-type', 'authorization',
 ]
 
 CORS_ALLOW_METHODS = [
