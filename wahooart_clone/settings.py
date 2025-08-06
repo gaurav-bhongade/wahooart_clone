@@ -139,7 +139,7 @@ SIMPLE_JWT = {
 }
 
 CSRF_TRUSTED_ORIGINS = [
-    'https://gauravbhongade4.pythonanywhere.com', "http://localhost:5173",
+    'https://gauravbhongade4.pythonanywhere.com',
 ]
 
 CORS_ALLOW_HEADERS = [
@@ -154,7 +154,7 @@ CORS_ALLOW_METHODS = [
 
 
 CORS_ALLOWED_ORIGINS = [
-    "https://frames-seven-iota.vercel.app",
+    "https://frames-seven-iota.vercel.app", "http://localhost:5173",
 ]
 
 CORS_ALLOW_CREDENTIALS = True
