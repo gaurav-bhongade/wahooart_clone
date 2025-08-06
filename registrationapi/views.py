@@ -11,8 +11,12 @@ from . utils import send_otp_via_msg91, verify_otp_via_msg91, resend_otp_via_msg
 from . models import BlacklistedAccessToken
 from rest_framework_simplejwt.tokens import AccessToken, RefreshToken
 from rest_framework_simplejwt.token_blacklist.models import OutstandingToken
-from .utils import generate_otp_token, verify_otp_token
-
+from .utils import generate_otp_token, verify_otp_token, OTP_SALT, decode_otp_token
+from itsdangerous import SignatureExpired, BadSignature
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import AllowAny
+from rest_framework.response import Response
+from rest_framework import status
 from django.conf import settings
 from itsdangerous import URLSafeTimedSerializer
 
@@ -30,78 +34,64 @@ def get_tokens_for_user(user):
     }
 
 
-from rest_framework.decorators import api_view, permission_classes
-from rest_framework.permissions import AllowAny
-from rest_framework.response import Response
-from rest_framework import status
-from django.contrib.auth.models import User
-from .models import UserProfile
-from .utils import generate_otp, generate_otp_token, verify_otp_token, send_otp_via_msg91, get_tokens_for_user
-
 
 @api_view(['POST'])
 @permission_classes([AllowAny])
 def register(request):
-    """
-    Step 1: Send OTP with user data embedded in token (no user created yet)
-    """
     mobile_number = request.data.get('mobile_number')
     password = request.data.get('password')
     role = request.data.get('role')
 
     if not all([mobile_number, password, role]):
-        return Response({'error': 'Mobile number, password, and role are required'}, status=status.HTTP_400_BAD_REQUEST)
+        return Response({'error': 'Mobile number, password, and role are required'}, status=400)
 
     if User.objects.filter(username=mobile_number).exists():
-        return Response({'error': 'Mobile number already registered'}, status=status.HTTP_400_BAD_REQUEST)
+        return Response({'error': 'Mobile number already registered'}, status=400)
 
     otp = generate_otp()
-    otp_token = generate_otp_token(mobile_number, otp, extra_data={'password': password, 'role': role})
+    otp_token = generate_otp_token(
+        mobile_number,
+        otp,
+        extra_data={
+            'password': password,
+            'role': role,
+            'resend_count': 0
+        }
+    )
 
     send_otp_via_msg91(mobile_number, otp)
 
     return Response({
         'message': 'OTP sent successfully.',
         'otp_token': otp_token,
-        'otp': otp  # ⚠️ REMOVE in production!
-    }, status=status.HTTP_200_OK)
-
+        'otp': otp  # ⚠️ REMOVE in production
+    }, status=200)
 
 @api_view(['POST'])
 @permission_classes([AllowAny])
 def verify_otp(request):
-    """
-    Step 2: Verify OTP and create user
-    """
+    otp_token = request.data.get('otp_token')
     entered_otp = request.data.get('otp')
     mobile_number = request.data.get('mobile_number')
-    otp_token = request.data.get('otp_token')
 
-    if not all([entered_otp, mobile_number, otp_token]):
-        return Response({'error': 'Missing required fields'}, status=status.HTTP_400_BAD_REQUEST)
+    if not all([otp_token, entered_otp, mobile_number]):
+        return Response({'error': 'Missing fields'}, status=400)
 
-    # Verify token and extract payload
     payload = verify_otp_token(otp_token, entered_otp)
 
     if not payload:
-        return Response({'error': 'Invalid or expired OTP'}, status=status.HTTP_400_BAD_REQUEST)
+        return Response({'error': 'Invalid or expired OTP'}, status=400)
 
     if payload.get('mobile') != mobile_number:
-        return Response({'error': 'Mobile number mismatch'}, status=status.HTTP_400_BAD_REQUEST)
+        return Response({'error': 'Mobile number mismatch'}, status=400)
 
     if User.objects.filter(username=mobile_number).exists():
-        return Response({'error': 'User already exists'}, status=status.HTTP_400_BAD_REQUEST)
+        return Response({'error': 'User already exists'}, status=400)
 
-    # Extract data from token
     password = payload.get('password')
     role = payload.get('role')
 
-    # Create user
-    user = User.objects.create_user(
-        username=mobile_number,
-        password=password
-    )
-
+    user = User.objects.create_user(username=mobile_number, password=password)
     is_verified = False if role == 'studio' else True
 
     UserProfile.objects.create(
@@ -112,29 +102,7 @@ def verify_otp(request):
         is_otp_verified=True
     )
 
-    tokens = get_tokens_for_user(user)
-
-    return Response({
-        'message': 'OTP verified and user registered successfully',
-        'tokens': tokens
-    }, status=status.HTTP_201_CREATED)
-
-
-
-
-
-
-
-from itsdangerous import URLSafeTimedSerializer, BadSignature, SignatureExpired
-from django.conf import settings
-from rest_framework.decorators import api_view, permission_classes
-from rest_framework.permissions import AllowAny
-from rest_framework.response import Response
-from rest_framework import status
-
-# Helper to get serializer
-def get_serializer():
-    return URLSafeTimedSerializer(settings.OTP_SECRET_KEY, salt="otp-salt")
+    return Response({'message': 'OTP verified and user registered successfully'}, status=201)
 
 @api_view(['POST'])
 @permission_classes([AllowAny])
@@ -142,46 +110,41 @@ def resend_otp(request):
     mobile_number = request.data.get('mobile_number')
     old_token = request.data.get('otp_token')
 
-    if not old_token:
-        return Response({'error': 'Missing OTP token'}, status=status.HTTP_400_BAD_REQUEST)
+    if not all([mobile_number, old_token]):
+        return Response({'error': 'Mobile number and OTP token are required'}, status=400)
 
-    s = get_serializer()
+    data = decode_otp_token(old_token)
+    if data == 'expired':
+        return Response({'error': 'OTP token expired'}, status=400)
+    if data is None:
+        return Response({'error': 'Invalid OTP token'}, status=400)
 
-    try:
-        data = s.loads(old_token, max_age=300)  # optional: set expiry (in seconds)
-    except SignatureExpired:
-        return Response({'error': 'OTP token expired'}, status=status.HTTP_400_BAD_REQUEST)
-    except BadSignature:
-        return Response({'error': 'Invalid OTP token'}, status=status.HTTP_400_BAD_REQUEST)
+    if data.get('mobile') != mobile_number:
+        return Response({'error': 'Mobile number mismatch'}, status=400)
 
-    role = data.get('role')
-    email = data.get('email')
-    password = data.get('password')
     resend_count = data.get('resend_count', 0)
-
     if resend_count >= 3:
-        return Response({'error': 'Max resend attempts reached. Please register again.'},
-                        status=status.HTTP_429_TOO_MANY_REQUESTS)
+        return Response({'error': 'Maximum resend attempts reached. Please register again.'}, status=429)
 
     new_otp = generate_otp()
-    new_data = {
-        'mobile_number': mobile_number,
-        'otp': new_otp,
-        'role': role,
-        'email': email,
-        'password': password,
-        'resend_count': resend_count + 1
-    }
 
-    new_token = s.dumps(new_data)
+    new_token = generate_otp_token(
+        mobile_number,
+        new_otp,
+        extra_data={
+            'password': data.get('password'),
+            'role': data.get('role'),
+            'resend_count': resend_count + 1
+        }
+    )
+
     send_otp_via_msg91(mobile_number, new_otp)
 
     return Response({
-        'message': f'OTP resent. Attempt {resend_count + 1}/3',
+        'message': f'OTP resent successfully. Attempt {resend_count + 1}/3',
         'otp_token': new_token,
-        'otp': new_otp  # ⚠️ Remove in production
-    }, status=status.HTTP_200_OK)
-
+        'otp': new_otp  # ⚠️ REMOVE in production
+    }, status=200)
 
 
 
@@ -258,81 +221,75 @@ def forget_password_request(request):
 
     try:
         user_profile = UserProfile.objects.get(mobile_number=mobile_number)
-        otp = generate_otp()
-        otp_token = generate_otp_token(mobile_number, otp, expires_sec=300)
-
-        response = send_forget_otp_via_msg91(mobile_number, otp)
-
-        if response.get("type") == "success":
-            return Response({
-                'message': 'OTP sent successfully',
-                'otp_token': otp_token,
-                'otp': otp  # ⚠️ Remove in prod
-            }, status=status.HTTP_200_OK)
-        else:
-            return Response({'error': 'Failed to send OTP'}, status=status.HTTP_400_BAD_REQUEST)
-
     except UserProfile.DoesNotExist:
         return Response({'error': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
 
+    otp = generate_otp()
+
+    otp_token = generate_otp_token(
+        mobile_number,
+        otp,
+        extra_data={'resend_count': 0}
+    )
+
+    response = send_forget_otp_via_msg91(mobile_number, otp)
+
+    if response.get("type") == "success":
+        return Response({
+            'message': 'OTP sent successfully',
+            'otp_token': otp_token,
+            'otp': otp  # ⚠️ Remove in production
+        }, status=status.HTTP_200_OK)
+
+    return Response({'error': 'Failed to send OTP'}, status=status.HTTP_400_BAD_REQUEST)
 
 
-
-
-from itsdangerous import URLSafeTimedSerializer, BadSignature, SignatureExpired
-
+# Step 2: Resend OTP
 @api_view(['POST'])
 @permission_classes([AllowAny])
 def resend_forget_otp(request):
     mobile_number = request.data.get('mobile_number')
     old_token = request.data.get('otp_token')
 
-    if not old_token:
-        return Response({'error': 'Missing OTP token'}, status=status.HTTP_400_BAD_REQUEST)
+    if not all([mobile_number, old_token]):
+        return Response({'error': 'Mobile number and OTP token are required'}, status=400)
 
-    try:
-        s = URLSafeTimedSerializer(settings.OTP_SECRET_KEY)
-        data = s.loads(old_token, max_age=300)  # Token valid for 5 mins
-    except SignatureExpired:
-        return Response({'error': 'OTP token has expired'}, status=status.HTTP_400_BAD_REQUEST)
-    except BadSignature:
-        return Response({'error': 'Invalid OTP token'}, status=status.HTTP_400_BAD_REQUEST)
+    data = decode_otp_token(old_token)
+    if data == 'expired':
+        return Response({'error': 'OTP token has expired'}, status=400)
+    if data is None:
+        return Response({'error': 'Invalid OTP token'}, status=400)
+
+    if data.get('mobile') != mobile_number:
+        return Response({'error': 'Mobile number mismatch'}, status=400)
 
     resend_count = data.get('resend_count', 0)
-
     if resend_count >= 3:
-        return Response({'error': 'Max resend attempts reached. Please try again later.'}, status=status.HTTP_403_FORBIDDEN)
+        return Response({'error': 'Maximum resend attempts reached. Please initiate forgot password again.'}, status=429)
 
-    try:
-        user_profile = UserProfile.objects.get(mobile_number=mobile_number)
-        new_otp = generate_otp()
-        new_token_data = {
-            'mobile_number': mobile_number,
-            'otp': new_otp,
+    new_otp = generate_otp()
+
+    new_token = generate_otp_token(
+        mobile_number,
+        new_otp,
+        extra_data={
             'resend_count': resend_count + 1
         }
+    )
 
-        s = URLSafeTimedSerializer(settings.OTP_SECRET_KEY)
-        new_token = s.dumps(new_token_data)
+    response = send_forget_otp_via_msg91(mobile_number, new_otp)
 
-        response = send_forget_otp_via_msg91(mobile_number, new_otp)
+    if response.get("type") == "success":
+        return Response({
+            'message': f'OTP resent successfully. Attempt {resend_count + 1}/3',
+            'otp_token': new_token,
+            'otp': new_otp  # ⚠️ Remove in production
+        }, status=200)
 
-        if response.get("type") == "success":
-            return Response({
-                'message': f'OTP resent successfully. Attempt {resend_count + 1}/3',
-                'otp_token': new_token,
-                'otp': new_otp  # ⚠️ Remove in production
-            }, status=status.HTTP_200_OK)
-        else:
-            return Response({'error': 'Failed to resend OTP'}, status=status.HTTP_400_BAD_REQUEST)
-
-    except UserProfile.DoesNotExist:
-        return Response({'error': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
+    return Response({'error': 'Failed to resend OTP'}, status=400)
 
 
-
-
-
+# Step 3: Verify OTP before allowing password reset
 @api_view(['POST'])
 @permission_classes([AllowAny])
 def api_verify_reset_otp(request):
@@ -340,24 +297,28 @@ def api_verify_reset_otp(request):
     entered_otp = request.data.get('otp')
     otp_token = request.data.get('otp_token')
 
-    verified_mobile = verify_otp_token(otp_token, entered_otp)
+    if not all([mobile_number, entered_otp, otp_token]):
+        return Response({'error': 'Missing required fields'}, status=400)
 
-    if not verified_mobile or verified_mobile != mobile_number:
-        return Response({'error': 'Invalid or expired OTP'}, status=status.HTTP_400_BAD_REQUEST)
+    payload = verify_otp_token(otp_token, entered_otp)
 
-    # Send back a new token that proves OTP was verified
-    verified_token = generate_otp_token(mobile_number, entered_otp, expires_sec=600, extra_data={"verified": True})
+    if not payload or payload.get('mobile') != mobile_number:
+        return Response({'error': 'Invalid or expired OTP'}, status=400)
+
+    # Generate a token to allow password reset
+    verified_token = generate_otp_token(
+        mobile_number,
+        entered_otp,
+        extra_data={"verified": True}
+    )
 
     return Response({
         'message': 'OTP verified successfully',
         'verified_token': verified_token
-    }, status=status.HTTP_200_OK)
+    }, status=200)
 
 
-
-
-from itsdangerous import URLSafeTimedSerializer, BadSignature, SignatureExpired
-
+# Step 4: Reset Password
 @api_view(['POST'])
 @permission_classes([AllowAny])
 def reset_password(request):
@@ -365,31 +326,28 @@ def reset_password(request):
     new_password = request.data.get('new_password')
     verified_token = request.data.get('verified_token')
 
-    if not new_password or not verified_token:
-        return Response({'error': 'Missing password or verification token'}, status=status.HTTP_400_BAD_REQUEST)
+    if not all([mobile_number, new_password, verified_token]):
+        return Response({'error': 'Missing required fields'}, status=400)
 
     try:
-        s = URLSafeTimedSerializer(settings.OTP_SECRET_KEY)
-        data = s.loads(verified_token, max_age=300)  # Token is valid for 5 minutes
+        data = decode_otp_token(verified_token)
 
-        if data.get('mobile') != mobile_number or not data.get('verified'):
-            return Response({'error': 'Token invalid or mismatched'}, status=status.HTTP_403_FORBIDDEN)
+        if data == 'expired':
+            return Response({'error': 'Token has expired'}, status=403)
+        if data is None or data.get('mobile') != mobile_number or not data.get('verified'):
+            return Response({'error': 'Invalid token or mobile number mismatch'}, status=403)
 
         user_profile = UserProfile.objects.get(mobile_number=mobile_number)
         user_profile.user.set_password(new_password)
         user_profile.user.save()
 
-        user_profile.otp = None
-        user_profile.save()
+        return Response({'message': 'Password reset successfully'}, status=200)
 
-        return Response({'message': 'Password reset successfully'}, status=status.HTTP_200_OK)
-
-    except SignatureExpired:
-        return Response({'error': 'Token has expired'}, status=status.HTTP_403_FORBIDDEN)
-    except BadSignature:
-        return Response({'error': 'Invalid token signature'}, status=status.HTTP_403_FORBIDDEN)
+    except UserProfile.DoesNotExist:
+        return Response({'error': 'User not found'}, status=404)
     except Exception as e:
-        return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        return Response({'error': str(e)}, status=500)
+
 
 
 

@@ -17,6 +17,7 @@ class UserProfile(models.Model):
     is_verified = models.BooleanField(default=False)
     is_otp_verified = models.BooleanField(default=False)
     otp = models.CharField(max_length=4, blank=True, null=True)
+    resend_count = models.IntegerField(default=0)
     profile_picture = models.ImageField(upload_to="profile_pics/", blank=True, null=True)
     profile_completed = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)

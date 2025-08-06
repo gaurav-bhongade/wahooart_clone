@@ -106,40 +106,43 @@ def resend_otp_retry(mobile_number):
 
 
 
-from itsdangerous import URLSafeTimedSerializer
-from django.conf import settings
 import random
+from itsdangerous import URLSafeTimedSerializer, BadSignature, SignatureExpired
+from django.conf import settings
 
 OTP_SALT = "otp-salt"
 
 def generate_otp():
     return str(random.randint(1000, 9999))
 
-def generate_otp_token(mobile_number, otp, extra_data=None, expires_sec=300):
-    s = URLSafeTimedSerializer(settings.OTP_SECRET_KEY)
+def get_serializer():
+    return URLSafeTimedSerializer(settings.OTP_SECRET_KEY)
+
+def generate_otp_token(mobile_number, otp, extra_data=None):
+    s = get_serializer()
     payload = {'mobile': mobile_number, 'otp': otp}
     if extra_data:
         payload.update(extra_data)
     return s.dumps(payload, salt=OTP_SALT)
 
-def verify_otp_token(token, entered_otp, max_age=300):
-    s = URLSafeTimedSerializer(settings.OTP_SECRET_KEY)
+def verify_otp_token(token, entered_otp, max_age=settings.OTP_EXPIRY_SECONDS):
+    s = get_serializer()
     try:
         data = s.loads(token, salt=OTP_SALT, max_age=max_age)
         if data.get('otp') == entered_otp:
             return data
         return False
-    except Exception as e:
-        print("OTP verification error:", e)
+    except Exception:
         return False
 
-def get_tokens_for_user(user):
-    from rest_framework_simplejwt.tokens import RefreshToken
-    refresh = RefreshToken.for_user(user)
-    return {
-        'refresh': str(refresh),
-        'access': str(refresh.access_token),
-    }
+def decode_otp_token(token, max_age=settings.OTP_EXPIRY_SECONDS):
+    s = get_serializer()
+    try:
+        return s.loads(token, salt=OTP_SALT, max_age=max_age)
+    except SignatureExpired:
+        return 'expired'
+    except BadSignature:
+        return None
 
 
 

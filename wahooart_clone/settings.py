@@ -14,6 +14,8 @@ SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-v7!m7zp@$^j#qn=o(f1wa1z=pe
 
 OTP_SECRET_KEY = 'django-insecure-v7!m7zp@sfgsdfg$^j#qn=o(f1wa1z=pe^ozr1paj#g@&e7xo%@^tiy=1'
 
+OTP_EXPIRY_SECONDS = 300
+
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
