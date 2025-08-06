@@ -139,7 +139,17 @@ SIMPLE_JWT = {
 }
 
 CSRF_TRUSTED_ORIGINS = [
-    'https://gauravbhongade4.pythonanywhere.com',
+    'https://gauravbhongade4.pythonanywhere.com', "http://localhost:5173",
+]
+
+CORS_ALLOW_HEADERS = [
+    'content-type',
+    'authorization',
+]
+
+CORS_ALLOW_METHODS = [
+    'POST',
+    'OPTIONS',
 ]
 
 

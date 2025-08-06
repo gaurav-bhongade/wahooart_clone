@@ -444,3 +444,23 @@ def upload_profile_pic_api(request):
         return Response({"message": "Profile picture uploaded successfully"}, status=status.HTTP_200_OK)
 
     return Response({"error": "No image uploaded"}, status=status.HTTP_400_BAD_REQUEST)
+
+
+from django.contrib.auth import get_user_model
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
+from rest_framework import status
+
+User = get_user_model()
+
+@api_view(['DELETE'])
+@permission_classes([IsAuthenticated])
+def delete_user_account(request):
+    try:
+        user = request.user
+        user.delete()  # This will also delete UserProfile if on_delete=models.CASCADE
+        return Response({"message": "User account deleted successfully."}, status=status.HTTP_200_OK)
+    except Exception as e:
+        return Response({"error": "Something went wrong while deleting the account."}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+

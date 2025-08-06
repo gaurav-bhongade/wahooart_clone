@@ -20,4 +20,6 @@ urlpatterns = [
 
     path('api/edit-profile/', edit_profile_api, name='edit-profile-api'),
     path('api/upload-profile-pic/', upload_profile_pic_api, name='upload-profile-pic-api'),
+
+    path('delete-account/', delete_user_account, name='delete_user_account'),
 ]
