@@ -105,36 +105,42 @@ def resend_otp_retry(mobile_number):
 
 
 
-# import random
-# import requests
-# from django.core.cache import cache
+
+from itsdangerous import URLSafeTimedSerializer
+from django.conf import settings
+import random
+
+OTP_SALT = "otp-salt"
+
+def generate_otp():
+    return str(random.randint(1000, 9999))
+
+def generate_otp_token(mobile_number, otp, extra_data=None, expires_sec=300):
+    s = URLSafeTimedSerializer(settings.OTP_SECRET_KEY)
+    payload = {'mobile': mobile_number, 'otp': otp}
+    if extra_data:
+        payload.update(extra_data)
+    return s.dumps(payload, salt=OTP_SALT)
+
+def verify_otp_token(token, entered_otp, max_age=300):
+    s = URLSafeTimedSerializer(settings.OTP_SECRET_KEY)
+    try:
+        data = s.loads(token, salt=OTP_SALT, max_age=max_age)
+        if data.get('otp') == entered_otp:
+            return data
+        return False
+    except Exception as e:
+        print("OTP verification error:", e)
+        return False
+
+def get_tokens_for_user(user):
+    from rest_framework_simplejwt.tokens import RefreshToken
+    refresh = RefreshToken.for_user(user)
+    return {
+        'refresh': str(refresh),
+        'access': str(refresh.access_token),
+    }
 
 
 
-# def resend_otp_retry(mobile_number):
-#     """Function to resend OTP via MSG91 and store OTP manually"""
 
-#     MSG91_AUTH_KEY = "443046ADu2LnU3LbM67dc0b9fP1"  # Replace with your actual auth key
-#     MSG91_BASE_URL = "https://control.msg91.com/api/v5/otp"
-    
-#     otp = str(random.randint(1000, 9999))  # Generate new 4-digit OTP
-    
-#     # Store OTP in Django cache (valid for 5 minutes)
-#     cache.set(f"otp_{mobile_number}", otp, timeout=300)
-
-#     # Send OTP using MSG91
-#     url = f"{MSG91_BASE_URL}/send"
-#     params = {
-#         "authkey": MSG91_AUTH_KEY,
-#         "mobile": f"91{mobile_number}",
-#         "otp": otp,  # Sending the OTP manually
-#         "message": f"Your OTP for verification is {otp}. Do not share it with anyone.",
-#         "sender": "MYAPP",  # Change this to your sender ID
-#         "otp_length": 4,  # Ensures a 4-digit OTP
-#     }
-    
-#     response = requests.get(url, params=params)
-    
-#     print(f"✅ MSG91 Resend OTP Response: {response.text}")
-    
-#     return {"type": "success", "otp": otp} if response.status_code == 200 else {"type": "error"}
