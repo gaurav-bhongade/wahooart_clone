@@ -46,7 +46,7 @@ def register(request):
         return Response({'error': 'Mobile number, password, and role are required'}, status=400)
 
     if User.objects.filter(username=mobile_number).exists():
-        return Response({'error': 'Mobile number already registered'}, status=400)
+        return Response({'error': 'Mobile number already registered'}, status=409)
 
     otp = generate_otp()
     otp_token = generate_otp_token(
@@ -83,10 +83,10 @@ def verify_otp(request):
         return Response({'error': 'Invalid or expired OTP'}, status=400)
 
     if payload.get('mobile') != mobile_number:
-        return Response({'error': 'Mobile number mismatch'}, status=400)
+        return Response({'error': 'Mobile number mismatch'}, status=409)
 
     if User.objects.filter(username=mobile_number).exists():
-        return Response({'error': 'User already exists'}, status=400)
+        return Response({'error': 'User already exists'}, status=409)
 
     password = payload.get('password')
     role = payload.get('role')
@@ -120,7 +120,7 @@ def resend_otp(request):
         return Response({'error': 'Invalid OTP token'}, status=400)
 
     if data.get('mobile') != mobile_number:
-        return Response({'error': 'Mobile number mismatch'}, status=400)
+        return Response({'error': 'Mobile number mismatch'}, status=409)
 
     resend_count = data.get('resend_count', 0)
     if resend_count >= 3:
