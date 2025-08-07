@@ -43,10 +43,10 @@ def register(request):
     role = request.data.get('role')
 
     if not all([mobile_number, password, role]):
-        return Response({'error': 'Mobile number, password, and role are required'}, status=400)
+        return Response({'error': 'Mobile number, password, and role are required'}, status=status.HTTP_400_BAD_REQUEST)
 
     if User.objects.filter(username=mobile_number).exists():
-        return Response({'error': 'Mobile number already registered'}, status=409)
+        return Response({'error': 'Mobile number already registered'}, status=status.HTTP_400_BAD_REQUEST)
 
     try:
         otp = generate_otp()
@@ -66,13 +66,13 @@ def register(request):
             'message': 'OTP sent successfully.',
             'otp_token': otp_token,
             'otp': otp  # ⚠️ REMOVE in production
-        }, status=200)
+        }, status=status.HTTP_200_OK)
 
     except Exception as e:
         return Response({
             'error': 'Something went wrong',
             'details': str(e)  # Show detailed error during development
-        }, status=500)
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 @api_view(['POST'])
@@ -83,18 +83,18 @@ def verify_otp(request):
     mobile_number = request.data.get('mobile_number')
 
     if not all([otp_token, entered_otp, mobile_number]):
-        return Response({'error': 'Missing fields'}, status=400)
+        return Response({'error': 'Missing fields'}, status=status.HTTP_401_UNAUTHORIZED)
 
     payload = verify_otp_token(otp_token, entered_otp)
 
     if not payload:
-        return Response({'error': 'Invalid or expired OTP'}, status=400)
+        return Response({'error': 'Invalid or expired OTP'}, status=status.HTTP_401_UNAUTHORIZED)
 
     if payload.get('mobile') != mobile_number:
-        return Response({'error': 'Mobile number mismatch'}, status=409)
+        return Response({'error': 'Mobile number mismatch'}, status=status.HTTP_401_UNAUTHORIZED)
 
     if User.objects.filter(username=mobile_number).exists():
-        return Response({'error': 'User already exists'}, status=409)
+        return Response({'error': 'User already exists'}, status=status.HTTP_401_UNAUTHORIZED)
 
     try:
         password = payload.get('password')
@@ -111,13 +111,13 @@ def verify_otp(request):
             is_otp_verified=True
         )
 
-        return Response({'message': 'OTP verified and user registered successfully'}, status=201)
+        return Response({'message': 'OTP verified and user registered successfully'}, status=status.HTTP_201_CREATED)
 
     except Exception as e:
         return Response({
             'error': 'Something went wrong during user registration',
             'details': str(e)
-        }, status=500)
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 @api_view(['POST'])
 @permission_classes([AllowAny])
@@ -126,20 +126,20 @@ def resend_otp(request):
     old_token = request.data.get('otp_token')
 
     if not all([mobile_number, old_token]):
-        return Response({'error': 'Mobile number and OTP token are required'}, status=400)
+        return Response({'error': 'Mobile number and OTP token are required'}, status=status.HTTP_401_UNAUTHORIZED)
 
     data = decode_otp_token(old_token)
     if data == 'expired':
-        return Response({'error': 'OTP token expired'}, status=400)
+        return Response({'error': 'OTP token expired'}, status=status.HTTP_401_UNAUTHORIZED)
     if data is None:
-        return Response({'error': 'Invalid OTP token'}, status=400)
+        return Response({'error': 'Invalid OTP token'}, status=status.HTTP_401_UNAUTHORIZED)
 
     if data.get('mobile') != mobile_number:
-        return Response({'error': 'Mobile number mismatch'}, status=409)
+        return Response({'error': 'Mobile number mismatch'}, status=status.HTTP_401_UNAUTHORIZED)
 
     resend_count = data.get('resend_count', 0)
     if resend_count >= 3:
-        return Response({'error': 'Maximum resend attempts reached. Please register again.'}, status=429)
+        return Response({'error': 'Maximum resend attempts reached. Please register again.'}, status=status.HTTP_429_TOO_MANY_REQUESTS)
 
     new_otp = generate_otp()
 
@@ -159,7 +159,7 @@ def resend_otp(request):
         'message': f'OTP resent successfully. Attempt {resend_count + 1}/3',
         'otp_token': new_token,
         'otp': new_otp  # ⚠️ REMOVE in production
-    }, status=200)
+    }, status=status.HTTP_200_OK)
 
 
 
@@ -219,9 +219,6 @@ def user_login(request):
 
     except UserProfile.DoesNotExist:
         return Response({'error': 'No profile found for this user.'}, status=status.HTTP_404_NOT_FOUND)
-
-
-
 
 
 
@@ -285,20 +282,20 @@ def resend_forget_otp(request):
     old_token = request.data.get('otp_token')
 
     if not all([mobile_number, old_token]):
-        return Response({'error': 'Mobile number and OTP token are required'}, status=400)
+        return Response({'error': 'Mobile number and OTP token are required'}, status=status.HTTP_401_UNAUTHORIZED)
 
     data = decode_otp_token(old_token)
     if data == 'expired':
-        return Response({'error': 'OTP token has expired'}, status=400)
+        return Response({'error': 'OTP token has expired'}, status=status.HTTP_401_UNAUTHORIZED)
     if data is None:
-        return Response({'error': 'Invalid OTP token'}, status=400)
+        return Response({'error': 'Invalid OTP token'}, status=status.HTTP_401_UNAUTHORIZED)
 
     if data.get('mobile') != mobile_number:
-        return Response({'error': 'Mobile number mismatch'}, status=400)
+        return Response({'error': 'Mobile number mismatch'}, status=status.HTTP_401_UNAUTHORIZED)
 
     resend_count = data.get('resend_count', 0)
     if resend_count >= 3:
-        return Response({'error': 'Maximum resend attempts reached. Please initiate forgot password again.'}, status=429)
+        return Response({'error': 'Maximum resend attempts reached. Please initiate forgot password again.'}, status=status.HTTP_429_TOO_MANY_REQUESTS)
 
     new_otp = generate_otp()
 
@@ -317,9 +314,9 @@ def resend_forget_otp(request):
             'message': f'OTP resent successfully. Attempt {resend_count + 1}/3',
             'otp_token': new_token,
             'otp': new_otp  # ⚠️ Remove in production
-        }, status=200)
+        }, status=status.HTTP_200_OK)
 
-    return Response({'error': 'Failed to resend OTP'}, status=400)
+    return Response({'error': 'Failed to resend OTP'}, status=status.HTTP_400_BAD_REQUEST)
 
 
 # Step 3: Verify OTP before allowing password reset
@@ -331,12 +328,12 @@ def api_verify_reset_otp(request):
     otp_token = request.data.get('otp_token')
 
     if not all([mobile_number, entered_otp, otp_token]):
-        return Response({'error': 'Missing required fields'}, status=400)
+        return Response({'error': 'Missing required fields'}, status=status.HTTP_401_UNAUTHORIZED)
 
     payload = verify_otp_token(otp_token, entered_otp)
 
     if not payload or payload.get('mobile') != mobile_number:
-        return Response({'error': 'Invalid or expired OTP'}, status=400)
+        return Response({'error': 'Invalid or expired OTP'}, status=status.HTTP_401_UNAUTHORIZED)
 
     # Generate a token to allow password reset
     verified_token = generate_otp_token(
@@ -348,7 +345,7 @@ def api_verify_reset_otp(request):
     return Response({
         'message': 'OTP verified successfully',
         'verified_token': verified_token
-    }, status=200)
+    }, status=status.HTTP_200_OK)
 
 
 # Step 4: Reset Password
@@ -360,26 +357,26 @@ def reset_password(request):
     verified_token = request.data.get('verified_token')
 
     if not all([mobile_number, new_password, verified_token]):
-        return Response({'error': 'Missing required fields'}, status=400)
+        return Response({'error': 'Missing required fields'}, status=status.HTTP_400_BAD_REQUEST)
 
     try:
         data = decode_otp_token(verified_token)
 
         if data == 'expired':
-            return Response({'error': 'Token has expired'}, status=403)
+            return Response({'error': 'Token has expired'}, status=status.HTTP_403_FORBIDDEN)
         if data is None or data.get('mobile') != mobile_number or not data.get('verified'):
-            return Response({'error': 'Invalid token or mobile number mismatch'}, status=403)
+            return Response({'error': 'Invalid token or mobile number mismatch'}, status=status.HTTP_403_FORBIDDEN)
 
         user_profile = UserProfile.objects.get(mobile_number=mobile_number)
         user_profile.user.set_password(new_password)
         user_profile.user.save()
 
-        return Response({'message': 'Password reset successfully'}, status=200)
+        return Response({'message': 'Password reset successfully'}, status=status.HTTP_200_OK)
 
     except UserProfile.DoesNotExist:
-        return Response({'error': 'User not found'}, status=404)
+        return Response({'error': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
     except Exception as e:
-        return Response({'error': str(e)}, status=500)
+        return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 
