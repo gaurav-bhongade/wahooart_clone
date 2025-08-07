@@ -48,24 +48,32 @@ def register(request):
     if User.objects.filter(username=mobile_number).exists():
         return Response({'error': 'Mobile number already registered'}, status=409)
 
-    otp = generate_otp()
-    otp_token = generate_otp_token(
-        mobile_number,
-        otp,
-        extra_data={
-            'password': password,
-            'role': role,
-            'resend_count': 0
-        }
-    )
+    try:
+        otp = generate_otp()
+        otp_token = generate_otp_token(
+            mobile_number,
+            otp,
+            extra_data={
+                'password': password,
+                'role': role,
+                'resend_count': 0
+            }
+        )
 
-    send_otp_via_msg91(mobile_number, otp)
+        send_otp_via_msg91(mobile_number, otp)
 
-    return Response({
-        'message': 'OTP sent successfully.',
-        'otp_token': otp_token,
-        'otp': otp  # ⚠️ REMOVE in production
-    }, status=200)
+        return Response({
+            'message': 'OTP sent successfully.',
+            'otp_token': otp_token,
+            'otp': otp  # ⚠️ REMOVE in production
+        }, status=200)
+
+    except Exception as e:
+        return Response({
+            'error': 'Something went wrong',
+            'details': str(e)  # Show detailed error during development
+        }, status=500)
+
 
 @api_view(['POST'])
 @permission_classes([AllowAny])
@@ -88,21 +96,28 @@ def verify_otp(request):
     if User.objects.filter(username=mobile_number).exists():
         return Response({'error': 'User already exists'}, status=409)
 
-    password = payload.get('password')
-    role = payload.get('role')
+    try:
+        password = payload.get('password')
+        role = payload.get('role')
 
-    user = User.objects.create_user(username=mobile_number, password=password)
-    is_verified = False if role == 'studio' else True
+        user = User.objects.create_user(username=mobile_number, password=password)
+        is_verified = False if role == 'studio' else True
 
-    UserProfile.objects.create(
-        user=user,
-        mobile_number=mobile_number,
-        role=role,
-        is_verified=is_verified,
-        is_otp_verified=True
-    )
+        UserProfile.objects.create(
+            user=user,
+            mobile_number=mobile_number,
+            role=role,
+            is_verified=is_verified,
+            is_otp_verified=True
+        )
 
-    return Response({'message': 'OTP verified and user registered successfully'}, status=201)
+        return Response({'message': 'OTP verified and user registered successfully'}, status=201)
+
+    except Exception as e:
+        return Response({
+            'error': 'Something went wrong during user registration',
+            'details': str(e)
+        }, status=500)
 
 @api_view(['POST'])
 @permission_classes([AllowAny])
@@ -155,39 +170,57 @@ def user_login(request):
     mobile_number = request.data.get('mobile_number')
     password = request.data.get('password')
 
-    user = authenticate(username=mobile_number, password=password)
-    if user:
-        try:
-            profile = UserProfile.objects.get(user=user)
+    if not all([mobile_number, password]):
+        return Response({'error': 'Mobile number and password are required.'}, status=status.HTTP_400_BAD_REQUEST)
 
-            if not profile.is_otp_verified:
-                otp = generate_otp()
-                profile.otp = otp
-                profile.save()
-                otp_token = generate_otp_token(mobile_number, otp)
-                send_otp_via_msg91(mobile_number, otp)
-                return Response({
-                    'error': 'OTP_NOT_VERIFIED',
-                    'message': 'OTP verification required.',
-                    'otp': otp,  # ⚠️ Remove in production
-                    'otp_token': otp_token
-                }, status=status.HTTP_403_FORBIDDEN)
+    try:
+        user = User.objects.get(username=mobile_number)
+    except User.DoesNotExist:
+        return Response({'error': 'User is not registered.'}, status=status.HTTP_404_NOT_FOUND)
 
-            if profile.role in ['builder', 'agent'] and not profile.is_verified:
-                return Response({'message': 'Your account is awaiting admin approval.'}, status=status.HTTP_403_FORBIDDEN)
+    # ✅ Manual password check instead of authenticate()
+    if not user.check_password(password):
+        return Response({'error': 'Invalid credentials.'}, status=status.HTTP_401_UNAUTHORIZED)
 
-            tokens = get_tokens_for_user(user)
-            login(request, user)
+    try:
+        profile = UserProfile.objects.get(user=user)
 
-            if not profile.profile_completed:
-                return Response({'message': 'Login successful, complete your profile.', 'tokens': tokens, 'redirect': 'complete_profile'}, status=status.HTTP_200_OK)
+        if not profile.is_otp_verified:
+            otp = generate_otp()
+            profile.otp = otp
+            profile.save()
+            otp_token = generate_otp_token(mobile_number, otp)
+            send_otp_via_msg91(mobile_number, otp)
+            return Response({
+                'error': 'OTP_NOT_VERIFIED',
+                'message': 'OTP verification required.',
+                'otp': otp,  # ⚠️ Remove in production
+                'otp_token': otp_token
+            }, status=status.HTTP_403_FORBIDDEN)
 
-            return Response({'message': 'Login successful', 'tokens': tokens, 'redirect': 'home'}, status=status.HTTP_200_OK)
+        if profile.role in ['builder', 'agent'] and not profile.is_verified:
+            return Response({'message': 'Your account is awaiting admin approval.'}, status=status.HTTP_403_FORBIDDEN)
 
-        except UserProfile.DoesNotExist:
-            return Response({'error': 'No profile found for this user.'}, status=status.HTTP_404_NOT_FOUND)
+        tokens = get_tokens_for_user(user)
+        login(request, user)
 
-    return Response({'error': 'Invalid credentials.'}, status=status.HTTP_401_UNAUTHORIZED)
+        if not profile.profile_completed:
+            return Response({
+                'message': 'Login successful, complete your profile.',
+                'tokens': tokens,
+                'redirect': 'complete_profile'
+            }, status=status.HTTP_200_OK)
+
+        return Response({
+            'message': 'Login successful',
+            'tokens': tokens,
+            'redirect': 'home'
+        }, status=status.HTTP_200_OK)
+
+    except UserProfile.DoesNotExist:
+        return Response({'error': 'No profile found for this user.'}, status=status.HTTP_404_NOT_FOUND)
+
+
 
 
 
