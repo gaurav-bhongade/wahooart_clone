@@ -21,8 +21,6 @@ DEBUG = True
 
 ALLOWED_HOSTS = [
     '127.0.0.1',
-    'gauravbhongade4.pythonanywhere.com',
-    'frames-seven-iota.vercel.app',
     'localhost',
     'localhost:5173'
 ]
@@ -80,17 +78,17 @@ WSGI_APPLICATION = 'wahooart_clone.wsgi.application'
 
 
 DATABASES = {
-        'default': {
+        'SQLT': {
             'ENGINE': 'django.db.backends.sqlite3',
             'NAME': BASE_DIR / 'db.sqlite3',
         },
-        'render': {
-            'ENGINE': 'django.db.backends.postgresql',
-            'NAME': 'photo_framing',
-            'USER': 'photo_framing_user',
-            'PASSWORD': '2eMvqKpEIy7402ug38ChWaBPvyXj2GyP',
-            'HOST': 'dpg-d28b2mh5pdvs738d202g-a.oregon-postgres.render.com',
-            'PORT': '5432'
+        'default': {
+            'ENGINE': 'django.db.backends.mysql',
+            'NAME': 'framicoweb$default',
+            'USER': 'framicoweb',
+            'PASSWORD': 'Framico@12345',
+            'HOST': 'framicoweb.mysql.pythonanywhere-services.com',
+            'PORT': '3306'
         }
     }
 
